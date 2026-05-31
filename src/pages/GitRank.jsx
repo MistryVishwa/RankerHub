@@ -38,7 +38,15 @@ export const GitRank = () => {
 
   // 1. Real-time Leaderboard Listener (Initial 50 Users)
   useEffect(() => {
+// eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingUsers(true);
+
+    if (!user) {
+      const timer = setTimeout(() => {
+        setLoadingUsers(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
 
     const q = query(
       collection(db, "users"),

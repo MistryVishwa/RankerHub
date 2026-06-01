@@ -39,15 +39,15 @@ Our security rules enforce strict checks to ensure data consistency, prevent arb
 
 **Update Rules (The Core Logic):**
 
-1. **Social Links Bypass (RULE 1):** Users can freely update their social URLs (LinkedIn, Instagram, Discord) and the `updatedAt` timestamp at any time, bypassing strict checks.
-2. **Immutable Onboarding Fields (RULE 2.1):** Once a user is onboarded (`onboardingStatus == "complete"`), they cannot modify critical profile metadata like gender, DOB, city, college, or createdAt.
-3. **Points Integrity (RULE 2.2 & 2.3):**
+* **Social Links Bypass (RULE 1):** Users can freely update their social URLs (LinkedIn, Instagram, Discord) and the `updatedAt` timestamp at any time, bypassing strict checks.
+* **Immutable Onboarding Fields (RULE 2.1):** Once a user is onboarded (`onboardingStatus == "complete"`), they cannot modify critical profile metadata like gender, DOB, city, college, or createdAt.
+* **Points Integrity (RULE 2.2 & 2.3):**
   * *Total Points Equation:* `totalPoints` must always equal the sum of `gitRankPoints + codingVersePoints + streakPoints + referralPoints`.
   * *Controlled Spikes:* Users cannot arbitrarily inflate points. Valid scenarios for points updates include:
     * Transitioning from incomplete to complete onboarding.
     * Minor incremental updates (e.g., streak login +2, codingVerse +5, capped at +100 total change per request).
-    * GitRank Updates: The `gitRankPoints` must strictly align with the formula: `(commits * 2) + (prs * 5) + (reviews * 10)`. Other points categories must remain unchanged during this specific update.
-4. **Referral Rewards (RULE 3 - Exploit Prevention):**
+    * GitRank Updates: The `gitRankPoints` must strictly align with the formula. Other points categories must remain unchanged during this specific update.
+* **Referral Rewards (RULE 3 - Exploit Prevention):**
   * This rule governs how a *referred user* updates the *referrer's* document.
   * The referred user can add exactly **100 points** to the referrer's `referralPoints` and `totalPoints`.
   * **Guards:**

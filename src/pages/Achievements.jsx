@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import Card from "../components/ui/Card";
 import SectionHeader from "../components/ui/SectionHeader";
-import ComingSoonCard from "../components/ui/ComingSoonCard";
 import { systemBadges } from "../constants";
 import { useAuth } from "../context/AuthContext";
 
@@ -97,19 +96,6 @@ export const Achievements = () => {
         badgeColor="bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20"
       />
 
-      <ComingSoonCard
-        title="Achievements Sync Engine - Coming Soon"
-        description="Earned badges are locked to your local profile session. Automatic verification of smart contracts, badge minting, and cross-platform verification will be available in Q3 2026."
-        icon={Award}
-        features={[
-          "Polygon blockchain badge minting (soulbound tokens)",
-          "Verify credentials directly on your LinkedIn profile",
-          "Unlock custom discord role integrations automatically",
-          "Earn limited-edition seasonal tournament badges"
-        ]}
-        estimatedArrival="Q3 2026"
-        showHourglass={true}
-      />
 
       {/* Main Grid: Left side Badges list, Right side detail */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

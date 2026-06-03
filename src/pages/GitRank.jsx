@@ -11,9 +11,29 @@ import axios from "axios";
 
 export const GitRank = () => {
   const { user, userData, fetchGitHubStats, login } = useAuth();
-  const [searchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") || "");
-  const [selectedLanguage, setSelectedLanguage] = useState("All");
+  
+  // ============================================================
+  // ISSUE #194: URL Parameter Sync for State Persistence
+  // ============================================================
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchTerm = searchParams.get("search") || "";
+  const selectedLanguage = searchParams.get("lang") || "All";
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    const newParams = new URLSearchParams(searchParams);
+    if (val) newParams.set("search", val);
+    else newParams.delete("search");
+    // Use replace: true so we don't bloat the browser history with every keystroke
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const handleLanguageChange = (lang) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (lang !== "All") newParams.set("lang", lang);
+    else newParams.delete("lang");
+    setSearchParams(newParams);
+  };
   
   // Pagination States
   const [lastVisible, setLastVisible] = useState(null); 
@@ -870,7 +890,7 @@ export const GitRank = () => {
               type="text"
               placeholder="Search user..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-950/20 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 dark:text-white transition-all"
             />
           </div>
@@ -882,7 +902,7 @@ export const GitRank = () => {
               {languages.map((lang) => (
                 <button
                   key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
+                  onClick={() => handleLanguageChange(lang)}
                   className={`
                     px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer whitespace-nowrap
                     ${

@@ -55,6 +55,12 @@ export const Profile = () => {
 
   const editDropdownRef = useRef(null);
 
+  // 1. Profile Real Heatmap State (Issue #205 Fix)
+  const [heatmap, setHeatmap] = useState({
+    grid: Array.from({ length: 16 }, () => Array(7).fill({ intensity: 0, daysAgo: 0, count: 0 })),
+    total: 0
+  });
+
   const filteredColleges = useMemo(() => {
     if (collegeSearch.trim() === "" || collegeSearch === "Other") {
       return collegesList;
@@ -124,7 +130,6 @@ export const Profile = () => {
       return;
     }
 
-    // Age validation (13+ years and not in the future)
     const today = new Date().toISOString().split("T")[0];
     if (editDob > today) {
       setEditError("Date of birth cannot be in the future.");
@@ -237,6 +242,67 @@ export const Profile = () => {
     fetchRank();
   }, [userData]);
 
+  // Fetch REAL Profile Heatmap Data replacing the old useMemo fake math (Issue #205)
+  useEffect(() => {
+    const fetchProfileHeatmap = async () => {
+      const username = userData?.githubUsername;
+      if (!username) return;
+
+      try {
+        const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${username}?y=last`);
+        if (!res.ok) throw new Error("API Limit");
+        
+        const data = await res.json();
+        const contributions = data.contributions || [];
+
+        // We need exactly 112 days to form 16 weeks * 7 days
+        const last112 = contributions.slice(-112);
+        let totalActivity = 0;
+        const grid = [];
+        let currentWeek = [];
+
+        last112.forEach((day, index) => {
+          const c = day.count;
+          totalActivity += c;
+          let intensity = 0;
+          
+          if (c > 0 && c <= 2) intensity = 1;
+          else if (c > 2 && c <= 5) intensity = 2;
+          else if (c > 5 && c <= 9) intensity = 3;
+          else if (c > 9) intensity = 4;
+
+          const daysAgo = 111 - index; 
+
+          currentWeek.push({ intensity, daysAgo, count: c });
+
+          if (currentWeek.length === 7) {
+            grid.push(currentWeek);
+            currentWeek = [];
+          }
+        });
+
+        // Pad if account has fewer than 112 days of history
+        if (grid.length < 16) {
+          const diff = 16 - grid.length;
+          const padWeek = Array(7).fill({ intensity: 0, daysAgo: 0, count: 0 });
+          const padGrid = Array(diff).fill(padWeek);
+          grid.unshift(...padGrid);
+        }
+
+        setHeatmap({ grid, total: totalActivity });
+      } catch (err) {
+        console.error("Profile heatmap fetch error:", err);
+        // Fallback to strict zeros
+        setHeatmap({
+          grid: Array.from({ length: 16 }, () => Array(7).fill({ intensity: 0, daysAgo: 0, count: 0 })),
+          total: 0
+        });
+      }
+    };
+
+    fetchProfileHeatmap();
+  }, [userData?.githubUsername]);
+
   const handleShareProfile = () => {
     const code = userData?.referralCode || "NEWCODE";
     navigator.clipboard.writeText(code);
@@ -290,7 +356,6 @@ export const Profile = () => {
       
       updateData.updatedAt = new Date().toISOString();
       
-      // Use Atomic Batch Write instead of updateDoc
       const batch = writeBatch(db);
       batch.update(userRef, updateData);
       await batch.commit();
@@ -328,7 +393,6 @@ export const Profile = () => {
       const isEnabling = !userData?.privateRepoSyncEnabled;
       const userRef = doc(db, "users", user.uid);
       
-      // Use Atomic Batch Write instead of updateDoc
       const batch = writeBatch(db);
       batch.update(userRef, { privateRepoSyncEnabled: isEnabling });
       await batch.commit();
@@ -357,43 +421,6 @@ export const Profile = () => {
     { label: "Referral Points", value: referralPoints, color: "bg-emerald-500" }
   ];
   const earnedPointsTotal = pointsEngines.reduce((sum, engine) => sum + Math.max(engine.value, 0), 0);
-
-  const heatmap = useMemo(() => {
-    const weeks = 16;
-    const daysPerWeek = 7;
-    const data = [];
-    
-    const seed = streak || 1;
-    let activityTotal = 0;
-
-    for (let w = 0; w < weeks; w++) {
-      const weekData = [];
-      for (let d = 0; d < daysPerWeek; d++) {
-        const daysAgo = ((weeks - 1 - w) * daysPerWeek) + (daysPerWeek - 1 - d);
-        let intensity; 
-        
-        if (daysAgo < streak) {
-           intensity = (daysAgo % 3) + 2; 
-        } else if (daysAgo > 111) {
-           intensity = 0; 
-        } else {
-           const pseudoRandom = Math.abs(Math.sin(daysAgo * seed) * 10000);
-           const normalized = pseudoRandom - Math.floor(pseudoRandom);
-           if (normalized > 0.8) intensity = 4;
-           else if (normalized > 0.6) intensity = 3;
-           else if (normalized > 0.4) intensity = 2;
-           else if (normalized > 0.2) intensity = 1;
-           else intensity = 0;
-        }
-        
-        activityTotal += intensity;
-        weekData.push({ intensity, daysAgo });
-      }
-      data.push(weekData);
-    }
-    
-    return { grid: data, total: activityTotal * 3 }; 
-  }, [streak]);
 
   const getIntensityColor = (intensity) => {
     switch(intensity) {
@@ -657,18 +684,18 @@ export const Profile = () => {
             ))}
           </div>
           {/* Toast Stack */}
-<div className="fixed bottom-6 right-5 z-50 flex flex-col gap-2 w-80">
-  <AnimatePresence>
-    {toasts.map((toast) => (
-      <Toast
-        key={toast.id}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-      />
-    ))}
-  </AnimatePresence>
-</div>
+          <div className="fixed bottom-6 right-5 z-50 flex flex-col gap-2 w-80">
+            <AnimatePresence>
+              {toasts.map((toast) => (
+                <Toast
+                  key={toast.id}
+                  message={toast.message}
+                  type={toast.type}
+                  onClose={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
       </Card>
 
@@ -722,7 +749,7 @@ export const Profile = () => {
               <Activity className="w-5 h-5 text-violet-500" /> Contribution Activity
             </h3>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-              Combined GitHub commits and RankerHub platform activity over the last 16 weeks.
+              Verified GitHub commits mapped chronologically over the last 16 weeks.
             </p>
           </div>
           <div className="text-right">
@@ -750,7 +777,7 @@ export const Profile = () => {
                     <div
                       key={`${wIdx}-${dIdx}`}
                       className={`w-3 h-3 sm:w-4 sm:h-4 rounded-sm ${getIntensityColor(day.intensity)} transition-colors hover:ring-2 ring-slate-400/50 cursor-crosshair`}
-                      title={`${day.intensity > 0 ? day.intensity * 3 : "No"} contributions ${day.daysAgo === 0 ? "today" : `${day.daysAgo} days ago`}`}
+                      title={`${day.count > 0 ? day.count : "No"} contributions ${day.daysAgo === 0 ? "today" : `${day.daysAgo} days ago`}`}
                     />
                   ))}
                 </div>
@@ -930,7 +957,7 @@ export const Profile = () => {
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-slate-900 dark:text-slate-200 leading-tight flex items-center gap-1">
+                    <h4 className="font-extrabold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
                       {badge.name}
                       {!unlocked && <span className="text-[8px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded">Locked</span>}
                     </h4>

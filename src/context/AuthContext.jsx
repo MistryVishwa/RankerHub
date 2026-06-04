@@ -75,6 +75,18 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    // If Firebase wasn't configured (app === null), `auth` will be null.
+    // Avoid calling `onAuthStateChanged` with a null auth instance which
+    // causes a runtime error in the browser bundle.
+    if (!auth) {
+      console.warn("Firebase auth is not initialized; auth listener skipped.");
+      setUser(null);
+      setUserData(null);
+      setIsOnboarding(false);
+      setLoading(false);
+      return undefined;
+    }
+
     let unsubscribeSnapshot = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {

@@ -72,13 +72,21 @@ const checkAndUpdateStreak = async (data, docRef) => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(auth ? true : false);
   const [isOnboarding, setIsOnboarding] = useState(false);
   // GitHub OAuth access token stored only in memory, not persisted to storage
   // Firebase Auth handles session persistence securely via HTTP-only cookies
   const [ghAccessToken, setGhAccessToken] = useState(null);
 
   useEffect(() => {
+    // If Firebase wasn't configured (app === null), `auth` will be null.
+    // Avoid calling `onAuthStateChanged` with a null auth instance which
+    // causes a runtime error in the browser bundle.
+    if (!auth) {
+      console.warn("Firebase auth is not initialized; auth listener skipped.");
+      return undefined;
+    }
+
     let unsubscribeSnapshot = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {

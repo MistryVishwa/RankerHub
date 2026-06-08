@@ -133,8 +133,10 @@ export const AuthProvider = ({ children }) => {
                 codingVersePoints: 0,
                 streakPoints: 0,
                 referralPoints: 0,
+                auditorPoints: 0,
                 totalPoints: 0
-              }
+              },
+              lastAuditReward: null
             };
             await setDoc(userDocRef, skeletalUser);
           } else {
@@ -276,8 +278,10 @@ export const AuthProvider = ({ children }) => {
             codingVersePoints: 0,
             streakPoints: 10, // Base points for 1st day streak
             referralPoints: 0,
+            auditorPoints: 0,
             totalPoints: 10
-          }
+          },
+          lastAuditReward: null
         };
         await setDoc(userDocRef, skeletalUser);
       } else {

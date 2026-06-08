@@ -11,11 +11,11 @@ import {
   Settings,
   LogOut,
   X,
-  Info,
   HelpCircle,
   Award,
   UsersRound,
-  Search
+  Search,
+  Activity
 } from "lucide-react";
 import { Github } from "../ui/Icons";
 import { sidebarLinks } from "../../constants";
@@ -37,7 +37,8 @@ const iconMap = {
   HelpCircle,
   Award,
   UsersRound,
-  Search
+  Search,
+  Activity
 };
 
 const isLinkActive = (pathname, path) => {

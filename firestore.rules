@@ -64,7 +64,7 @@ service cloud.firestore {
           (resource.data.onboardingStatus == "incomplete" && request.resource.data.onboardingStatus == "complete") ||
           // Points unchanged
           (request.resource.data.points.totalPoints == resource.data.points.totalPoints) ||
-          // NEW LIMIT: Cap changed from 100 to 200 for CodingVerse Hard challenges
+// NEW LIMIT: Cap changed from 100 to 200 for CodingVerse Hard challenges
           (request.resource.data.points.totalPoints > resource.data.points.totalPoints && request.resource.data.points.totalPoints - resource.data.points.totalPoints <= 200) ||
           // GitHub stats formula sync
           (
